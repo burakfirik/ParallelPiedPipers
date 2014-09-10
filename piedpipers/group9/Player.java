@@ -126,4 +126,6 @@ public class Player extends piedpipers.sim.Player {
 		return getSide(p.x, p.y);
 	}
 
+	
+	
 }
