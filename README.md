@@ -1,3 +1,19 @@
+PiedPipers
+
+Command-line argument: java piedpipers.sim.Piedpipers arg1 arg2 ....
+
+arg1: group name 
+arg2: number of pipers
+arg3: number of rats
+arg4: graphic interface (true-enable, false-disable)
+arg5: the seed for random distribution of the rats(you could set it to any integer)
+arg6: the size of the field (eg. If it is 100*100, then the input is 100)
+
+Example: Play a game with 5 pipers, 10 rats, Display GUI, the seed for random generator is 6, the size is 50*50
+
+java piedpipers.sim.Piedpipers dumb1 5 10 true 6 50
+
+
 Parallel Pied Pipers
 
 The legend of the Pied Piper of Hamelin states that he was a rat-catcher hired by the city of Hamelin to eliminate its rat population. The Pied Piper played his flute, which attracted the rats, and drew them to the river where they drowned. When the city did not pay the piper, he is said to have lured the city's children away.
