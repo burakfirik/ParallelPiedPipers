@@ -80,46 +80,73 @@ public class Player extends piedpipers.sim.Player {
 			oy = pspeed * Math.cos(thetas[id] * Math.PI / 180);
 		}		
 		else { // after bounced and turns on music;
-			this.music = true; // music turns on once pipers have reached close to wall
-			if(!this.sweep){
-				this.sweep = true; // sweeping begins once the pipers have reached close to wall
-				assignRats(rats);
-			}
 			
-			ArrayList<Point> missingRats = ratsToCollect(pipers, rats); // rats that have to get collected
-			System.out.println("number of missing rats = " + missingRats.size());
-			if(missingRats.size() > 0){
-				/*
-				String print = "rats to collect are: ";
-				for(int i = 0; i < missingRats.size(); i++)
-					print += missingRats.get(i) + ", ";
-				System.out.println(print);
-				*/
-				
-				System.out.println("hasResponsibility for id=" + id + ":" + hasResponsibility(Global.assignedRats.get(id), missingRats));
-				if(hasResponsibility(Global.assignedRats.get(id), missingRats)){
-					current = toRat(current, missingRats);
+			current=sweep(pipers,rats);
+			
+			//Point rachelPoint=RachelFunction();
+			//Point burakPoint=BurakFuntion();
 					
-				}
-				else
-					current = toGate(current);
-				
-				if(missingRats.size() == 1){
-					for(int i = 0; i < npipers; i++){
-						if(isResponsibility(Global.assignedRats.get(i), missingRats.get(0)))
-							System.out.println("the THE MISSING RAT IS PIPER:" + i+ "'S RESPONSIBILITY.");
-					}
-				}
-				
-			}
-			else{
-				current = toGate(current);
-				
-			}
+			
+			 return current;
+			
 		}
 		current.x += ox;
 		current.y += oy;
+		
 		return current;
+	}
+		
+	
+	
+	public Point sweep(Point []pipers,Point []rats){
+		
+		Point current = pipers[id]; // Where the pipers are right now
+		double ox = 0, oy = 0; // direction of the piper
+		this.music = true; // music turns on once pipers have reached close to wall
+		if(!this.sweep){
+			this.sweep = true; // sweeping begins once the pipers have reached close to wall
+			assignRats(rats);
+		}
+		
+		ArrayList<Point> missingRats = ratsToCollect(pipers, rats); // rats that have to get collected
+		System.out.println("number of missing rats = " + missingRats.size());
+		if(missingRats.size() > 0){
+			/*
+			String print = "rats to collect are: ";
+			for(int i = 0; i < missingRats.size(); i++)
+				print += missingRats.get(i) + ", ";
+			System.out.println(print);
+			*/
+			
+			System.out.println("hasResponsibility for id=" + id + ":" + hasResponsibility(Global.assignedRats.get(id), missingRats));
+			if(hasResponsibility(Global.assignedRats.get(id), missingRats)){
+				current = toRat(current, missingRats);
+				
+			}
+			else
+				current = toGate(current);
+			
+			if(missingRats.size() == 1){
+				for(int i = 0; i < npipers; i++){
+					if(isResponsibility(Global.assignedRats.get(i), missingRats.get(0)))
+						System.out.println("the THE MISSING RAT IS PIPER:" + i+ "'S RESPONSIBILITY.");
+				}
+			}
+			
+		}
+		else{
+			
+			
+			
+			current = toGate(current);
+			
+		}
+		
+	
+		current.x += ox;
+		current.y += oy;
+	return current;
+		
 	}
 	
 	public Point toRat(Point current, ArrayList<Point> missingRats){
