@@ -117,7 +117,6 @@ public class Player extends piedpipers.sim.Player {
 				
 			}
 		}
-		
 		current.x += ox;
 		current.y += oy;
 		return current;
