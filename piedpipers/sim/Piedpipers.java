@@ -247,7 +247,7 @@ public class Piedpipers {
 			}
 
 			repaint();
-		}
+		}	
 
 		public void createAndShowGUI() {
 			this.setLayout(null);
