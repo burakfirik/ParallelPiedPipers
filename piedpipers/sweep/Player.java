@@ -15,7 +15,7 @@ public class Player extends piedpipers.sim.Player {
 	static boolean finishround = false; // false if the pipers are not near the gate
 	static boolean initi = false;
 	static boolean sweep = false; // false if the pipers have not began sweeping, true if pipers begin sweeping
-	static ArrayList<ArrayList<Point>> assignedRats;
+	static ArrayList<ArrayList<Integer>> assignedRats;
 	
 	public void init() {
 		target = new Point(dimension/2 - 3, dimension/2); // the location past the gate on the left side where the pipers will rest once they have swept all of the rats
@@ -28,9 +28,9 @@ public class Player extends piedpipers.sim.Player {
 			System.out.println("THETAS EQUAL : " + thetas[i]);
 		}
 		
-		assignedRats = new ArrayList<ArrayList<Point>>();
+		assignedRats = new ArrayList<ArrayList<Integer>>();
 		for(int i = 0; i < npipers; i++){
-			assignedRats.add(new ArrayList<Point>());
+			assignedRats.add(new ArrayList<Integer>());
 		}
 		
 	}
@@ -80,9 +80,9 @@ public class Player extends piedpipers.sim.Player {
 				assignRats(rats);
 			}
 			
-			ArrayList<Point> missingRats = ratsToCollect(pipers, rats); // rats that have to get collected
-			System.out.println("number of missing rats = " + missingRats.size());
-			if(missingRats.size() > 0){
+			ArrayList<Integer> missingRatsIDs = ratsToCollect(pipers, rats); // rats that have to get collected
+			System.out.println("number of missing rats = " + missingRatsIDs.size());
+			if(missingRatsIDs.size() > 0){
 				/*
 				String print = "rats to collect are: ";
 				for(int i = 0; i < missingRats.size(); i++)
@@ -90,20 +90,12 @@ public class Player extends piedpipers.sim.Player {
 				System.out.println(print);
 				*/
 				
-				System.out.println("hasResponsibility for id=" + id + ":" + hasResponsibility(assignedRats.get(id), missingRats));
-				if(hasResponsibility(assignedRats.get(id), missingRats)){
-					current = toRat(current, missingRats);
-					
+				System.out.println("hasResponsibility for id=" + id + ":" + hasResponsibility(assignedRats.get(id), missingRatsIDs));
+				if(hasResponsibility(assignedRats.get(id), missingRatsIDs)){
+					current = toRat(current, missingRatsIDs, rats);	
 				}
 				else
 					current = toGate(current);
-				
-				if(missingRats.size() == 1){
-					for(int i = 0; i < npipers; i++){
-						if(isResponsibility(assignedRats.get(i), missingRats.get(0)))
-							System.out.println("the THE MISSING RAT IS PIPER:" + i+ "'S RESPONSIBILITY.");
-					}
-				}
 				
 			}
 			else
@@ -116,69 +108,82 @@ public class Player extends piedpipers.sim.Player {
 		return current;
 	}
 	
-	public Point toRat(Point current, ArrayList<Point> missingRats){
-		System.out.println("IN TO RAT");
+	// returns the point that the piper moves towards the rat
+	public Point toRat(Point current, ArrayList<Integer> missingRats, Point[] rats){
+		
 		double ox = 0, oy = 0;
 		Point gate = new Point(dimension/2, dimension/2);
-		Point rat = furthestRat(gate, missingRats);
+		int furthestRatID = furthestRat(gate, missingRats, rats); // getting the ID of the furthest rat
+		Point furthestRat = rats[furthestRatID]; // getting the point of the furthest rat
 		
+		System.out.println("IN TO RAT, GETTING RAT AT POINT: " + furthestRat);
 		// if both the x and y of the piper are farther than 1 from the rat, change both
-		if(Math.abs(rat.x - current.x) > 1 && Math.abs(rat.y - current.y) > 1 ){
-			double dist = distance(current, rat);
+		if(Math.abs(furthestRat.x - current.x) > 1 && Math.abs(furthestRat.y - current.y) > 1 ){
+			double dist = distance(current, furthestRat);
 			assert dist > 0;
-			
-			ox = (rat.x - current.x) / dist * mpspeed;
-			oy = (rat.y - current.y) / dist * mpspeed;
+			System.out.println("IN BOTH DIFFERENCE");
+			ox = (furthestRat.x - current.x) / dist * mpspeed;
+			oy = (furthestRat.y - current.y) / dist * mpspeed;
 		}
 		// if the x of the piper is farther than 1 from the rat, change x
-		else if(Math.abs(rat.x - current.x) > 1){
-			double dist = distance(current, rat);
+		else if(Math.abs(furthestRat.x - current.x) > 1){
+		
+			System.out.println("IN X DIFFERENCE");
+			double dist = distance(current, furthestRat);
 			assert dist > 0;
 			
-			ox = (rat.x - current.x) / dist * mpspeed;
+			ox = (furthestRat.x - current.x) / dist * mpspeed;
 		}
 		// if the y of the piper is farther than 1 from the rat, change y
-		else{ // if  (Math.abs(rat.y - current.y) > 1)
-			double dist = distance(current, rat);
+		else{ // if  (Math.abs(furthestRat.y - current.y) > 1)
+		
+			System.out.println("IN Y DIFFERENCE, furthestRat = " + furthestRat);
+			double dist = distance(current, furthestRat);
 			assert dist > 0;
 			
-			oy = (rat.y - current.y) / dist * mpspeed;
+			oy = (furthestRat.y - current.y) / dist * mpspeed;
 		}
 		
 		Point next = new Point(current.x + ox, current.y + oy);
 		return next;	
 	}
 	
-	public Point furthestRat(Point gate, ArrayList<Point> missingRats){
+	// returns the rat that is furthest in the region
+	public int furthestRat(Point gate, ArrayList<Integer> missingRats, Point[] rats){
+		System.out.println("missingRat location = " + missingRats.get(0) + " = " + rats[missingRats.get(0)]);
 		int ratID = 0;
-		ArrayList<Point> currentRats = assignedRats.get(id);
+		ArrayList<Integer> currentRats = assignedRats.get(id);
 		for(int i = 0; i < missingRats.size(); i++){
-			if(isResponsibility(currentRats, missingRats.get(i)) && distance(gate, missingRats.get(i)) > distance(gate, missingRats.get(ratID)))
+			System.out.println("isResponsibility = " + isResponsibility(currentRats, rats[missingRats.get(i)], rats) + ", and distance > distance[ratID] = " + (distance(gate, rats[missingRats.get(i)]) > distance(gate, rats[missingRats.get(ratID)])));
+			if(isResponsibility(currentRats, rats[missingRats.get(i)], rats) && distance(gate, rats[missingRats.get(i)]) > distance(gate, rats[missingRats.get(ratID)]))
 				ratID = i;
 		}
-		
+		System.out.println("furthest rat location " + ratID + " = " + rats[ratID]);
 		return missingRats.get(ratID);
 	}
 	
-	public boolean hasResponsibility(ArrayList<Point> currentRats, ArrayList<Point> missingRats){
+	// if any of the missing rats are the current piper's responsibility
+	public boolean hasResponsibility(ArrayList<Integer> currentRats, ArrayList<Integer> missingRats){
 		System.out.println("in hasResponsibility()");
 		for(int i = 0; i < currentRats.size(); i++){
 			for(int j = 0; j < missingRats.size(); j++){
-				if(currentRats.get(i).equals(missingRats.get(j)))
+				if(currentRats.get(i) == missingRats.get(j))
 					return true;
 			}
 		}
 		return false;
 	}
 	
-	public boolean isResponsibility(ArrayList<Point> currentRats, Point rat){
+	// returns true if the specific rat is the current piper's responsibility
+	public boolean isResponsibility(ArrayList<Integer> currentRats, Point specificRat, Point[] rats){
 		for(int i = 0; i < currentRats.size(); i++){
-			if(currentRats.get(i).equals(rat))
+			if(rats[currentRats.get(i)].equals(specificRat))
 				return true;
 		}
 		return false;
 	}
 	
+	// returns the point if moving piper towards the gate
 	public Point toGate(Point current){
 		double ox = 0, oy = 0;
 		Point gate = new Point(dimension/2, dimension/2);
@@ -221,10 +226,26 @@ public class Player extends piedpipers.sim.Player {
 	
 	// assigns the rats to all of the pipers based on region
 	public void assignRats(Point[] rats) {
+
+		// adds the ratID to the piper's list of rats that it's responsible for
 		for(int j = 0; j < rats.length; j++){
 			int responsiblePiper = getPiperResponsibilityID(rats[j]);
-			assignedRats.get(responsiblePiper).add(rats[j]);
+			assignedRats.get(responsiblePiper).add(j);
 		}
+		
+		/*
+		String s = "ASSIGNMENT\npiper ";
+		for(int i = 0; i < assignedRats.size(); i++){
+			ArrayList<Point> piperAssignedRats = assignedRats.get(i);
+			s += i + ": ";
+			for(int k = 0; k < piperAssignedRats.size(); k++){
+				s += piperAssignedRats.get(k) + ",";
+			}
+			s += "\n";
+		}
+		System.out.println(s);
+		*/
+
 	}
 	
 	// returns the ID of the piper who has the responsibility for the rat
@@ -240,24 +261,26 @@ public class Player extends piedpipers.sim.Player {
 		return piperID;
 	}
 	
-	public ArrayList<Point> ratsToCollect(Point[] pipers, Point[] rats){
-		ArrayList<Point> ratsToCollect = new ArrayList<Point>();
+	// returns an ArrayList of ratIDs that need to be collected
+	public ArrayList<Integer> ratsToCollect(Point[] pipers, Point[] rats){
+		ArrayList<Integer> ratsToCollect = new ArrayList<Integer>();
 		for(int i = 0; i < rats.length; i++){
 			Point closestPiper = getClosestMusicPiper(pipers, rats, i);
 			double dist = distance(rats[i], closestPiper);
-			if(dist > 10) ratsToCollect.add(rats[i]);
+			if(dist > 10) ratsToCollect.add(i);
 		}
 	
 		return ratsToCollect;
 	}
 	
+	// returns true if all rats have been collected
 	boolean allRatsCollected(Point[] pipers, Point[] rats){
 		if(ratsToCollect(pipers, rats).size() == 0)	
 			return true;
 		return false;
 	}
 	
-	
+	// returns the point of the closest music piper, taken from Piedpipers class
 	public Point getClosestMusicPiper(Point[] pipers, Point[] rats, int ratId) {
 		int minpiper = -1;
 		double mindist = Double.MAX_VALUE;
