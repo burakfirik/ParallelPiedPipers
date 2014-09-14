@@ -88,6 +88,8 @@ public class Player extends piedpipers.sim.Player {
 			ox = pspeed * Math.sin(thetas[id] * Math.PI / 180);
 			oy = pspeed * Math.cos(thetas[id] * Math.PI / 180);
 		}	
+		//I made this false intentionally to test the greedy algo
+		//remove the false flag to test sweep algo
 		else if(PlayUtilities.density()>Global.epsilon&&false){ // after bounced and turns on music;
 			current=sweep(pipers,rats);
 			//Point rachelPoint=RachelFunction();
@@ -98,19 +100,14 @@ public class Player extends piedpipers.sim.Player {
 			current=PlayUtilities.movePiperTo(pipers[id], new Point(Global.GATE.x-5,Global.GATE.y));
 			return current;
 		}else{
-			
 			//when density is low
 			this.sweep=true;
 			//when density is low it will execute this function
 			this.music = true; // music turns on once pipers have reached close to wall
 			Init.setMusicStatus(this.music);
-			//PlayUtilities.setIsPlaying(id, this.music);
-			
-			
 			current=PlayUtilities.greedySearch(pipers,rats,id);
 			//current=PlayUtilities.movePiperTo(current, Global.GATE);
 			PlayUtilities.updateLuredRats(rats, pipers);
-			
 			return current;
 			  
 		}
