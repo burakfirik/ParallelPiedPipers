@@ -38,12 +38,14 @@ public class Player extends piedpipers.sim.Player {
 
 	public Point move(Point[] pipers, // positions of dogs
 			Point[] rats) { // positions of the rats
-			
+		
 		if (!initi) {
 			this.init();
 		}
 		if(!Global.initGlobal){
 			Init.initGlobal(pipers,rats,dimension);
+			Init.initGate();
+			Init.initLuredRats();
 		}
 		if(!Global.initThetas){
 			thetas=Init.initThetas();
@@ -51,8 +53,13 @@ public class Player extends piedpipers.sim.Player {
 		if(!Global.initAssignedRats){
 			Init.initAssignRats();
 		}
+		if(!Global.initEpsiolon){
+			Init.initEpsilonDensity();
+		}
 		
+		PlayUtilities.updateOldRatsAndPipers(id, rats);
 		PlayUtilities.updateGlobal(pipers,rats);
+		
 		
 		npipers = pipers.length;
 		System.out.println(initi);
@@ -65,6 +72,7 @@ public class Player extends piedpipers.sim.Player {
 		
 		if (PlayUtilities.getSide(current) == 0 && !sweep) { // if on the left side - starting point
 			this.music = false;
+			Global.isPlaying[id]=this.music;
 			
 			// this is the change in movement towards the gate
 			double dist = PlayUtilities.distance(current, gate);
@@ -76,34 +84,52 @@ public class Player extends piedpipers.sim.Player {
 		else if (!PlayUtilities.closetoWall(current) && !sweep) { // on the right side and hasn't bounced back yet
 			// this is the change in movement based on the angle
 			this.music = false;
+			Global.isPlaying[id]=this.music;
 			ox = pspeed * Math.sin(thetas[id] * Math.PI / 180);
 			oy = pspeed * Math.cos(thetas[id] * Math.PI / 180);
-		}		
-		else { // after bounced and turns on music;
-			
+		}	
+		else if(PlayUtilities.density()>Global.epsilon&&false){ // after bounced and turns on music;
 			current=sweep(pipers,rats);
-			
 			//Point rachelPoint=RachelFunction();
 			//Point burakPoint=BurakFuntion();
-					
-			
 			 return current;
 			
+		}else if(pipers[id].x<=Global.GATE.x&&music&&pipers[id].y==Global.GATE.y){
+			current=PlayUtilities.movePiperTo(pipers[id], new Point(Global.GATE.x-5,Global.GATE.y));
+			return current;
+		}else{
+			
+			//when density is low
+			this.sweep=true;
+			//when density is low it will execute this function
+			this.music = true; // music turns on once pipers have reached close to wall
+			Init.setMusicStatus(this.music);
+			//PlayUtilities.setIsPlaying(id, this.music);
+			
+			
+			current=PlayUtilities.greedySearch(pipers,rats,id);
+			//current=PlayUtilities.movePiperTo(current, Global.GATE);
+			PlayUtilities.updateLuredRats(rats, pipers);
+			
+			return current;
+			  
 		}
+		
 		current.x += ox;
 		current.y += oy;
 		
+		PlayUtilities.updateLuredRats(rats, pipers);
 		return current;
 	}
 		
 	
 	
 	public Point sweep(Point []pipers,Point []rats){
-		
+		this.music = true; 
+		Init.setMusicStatus(this.music);
 		Point current = pipers[id]; // Where the pipers are right now
 		double ox = 0, oy = 0; // direction of the piper
-		this.music = true; // music turns on once pipers have reached close to wall
-		if(!this.sweep){
+				if(!this.sweep){
 			this.sweep = true; // sweeping begins once the pipers have reached close to wall
 			assignRats(rats);
 		}
@@ -294,10 +320,10 @@ public class Player extends piedpipers.sim.Player {
 	public Point getClosestMusicPiper(Point[] pipers, Point[] rats, int ratId) {
 		int minpiper = -1;
 		double mindist = Double.MAX_VALUE;
-		for (int i = 0; i < npipers; ++i) {
+		for (int i = 0; i < Global.npipers; ++i) {
 			if (this.music) {
 				double d = PlayUtilities.distance(rats[ratId], pipers[i]);
-				if (d < mindist && d > 0) { // ignore overlapping pipers?
+				if (d < mindist && d > 10) { // ignore overlapping pipers?
 					mindist = d;
 					minpiper = i;
 				}

@@ -1,5 +1,8 @@
 package piedpipers.group9;
 
+import java.util.Iterator;
+import java.util.Map;
+
 import piedpipers.sim.Point;
 
 /**/
@@ -43,34 +46,40 @@ public class PlayUtilities {
 	}
 	
 	// detect whether the player has achieved the requirement
-	public double density() {
+	public static double density() {
 			int nrats=0;
 			for (int i = 0; i < Global.nrats; ++i) {
 				if (getSide(Global.rats[i]) == 1)
 					nrats++;
 			}
-			return (double)nrats/(Global.dimension*Global.dimension/2.0);
+			return (double)nrats/((double)Global.dimension*(double)Global.dimension/2.0);
 	}
 	
-	public Point movePiperTo(Point from, Point to) {
+	public static Point movePiperTo(Point from, Point to) {
         double dx = to.x - from.x;
         double dy = to.y - from.y;
+        double speed=1.0;
+        if(!Global.musicStatusCurrentPlayer){
+        	speed=5.0;
+        }
         double d = vectorLength(dx, dy);
-        if (d <= Global.MUSICPIPER_SPEED * Global.TIMEUNIT)
+        if (d <= speed * Global.TIMEUNIT)
             return to;
         else {
-            double scale = (Global.MUSICPIPER_SPEED * Global.TIMEUNIT - Global.SMALLDISTANCE)/ d;
+            double scale = (speed * Global.TIMEUNIT - Global.SMALLDISTANCE)/ d;
             double x = from.x + scale * dx;
             double y = from.y + scale * dy;
+            
             if (x > Global.dimension)
                 x = Global.dimension;
             if (y > Global.dimension)
                 y = Global.dimension;
+            
             return new Point(x, y);
         } 
     }
 	
-	 public double vectorLength(double dx, double dy) {
+	 public static double vectorLength(double dx, double dy) {
 	        return Math.sqrt(dx * dx + dy * dy);
 	 }
 
@@ -122,4 +131,161 @@ public class PlayUtilities {
         return pipers[minPiper];
     }
 
+    // pick a closest piper for a particular rat
+    static int getClosestPiperId(int ratId, Point[] pipers, Point[] rats) {
+        int minPiper = -1;
+        double mindist = Double.MAX_VALUE;
+        for (int i = 0; i < pipers.length; ++i) {
+            double d = distance(rats[ratId], pipers[i]);
+            if (d < mindist && d != 0) { // ignore overlapping piper
+                mindist = d;
+                minPiper = i;
+            }
+        }
+        return minPiper;
+    }
+    
+    
+    static boolean isRatUnderInfluence(int ratId, Point[] pipers,Point []rats) {
+        for (int i = 0; i < pipers.length; ++i) {
+            double d = distance(rats[ratId], pipers[i]);
+            if (d <=10) { // ignore overlapping piper
+               return true;
+            }
+        }
+        return false;
+    }
+    
+	public static Point greedySearch(Point[] pipers, Point[] rats,int id) {
+		
+		
+				Point rat=getClosestRatNotLuredInTheRegion(pipers, rats, id);
+				Point rtn=movePiperTo(pipers[id],rat);
+				//Global.ratIsAssignedGreedy.put(pipers[id],rat);
+				return rtn;
+		
+		
+	}
+	
+	public static boolean isThereOtherPiper(Point[] pipers, int id) {
+		// TODO Auto-generated method stub
+		Point current=pipers[id];
+		for(int i=0;i<pipers.length;i++){
+			
+			if(!pipers[i].equals(current)){
+				if(distance(current,pipers[i])<=10){
+					
+						return true;
+					
+				}
+			}
+			
+		}
+		return false;
+	}
+
+	public static boolean isAssigned(Point rat){
+		
+		for(int i=0;i<Global.pipers.length;i++){
+			
+			if(Global.ratIsAssignedGreedy.containsKey(Global.pipers[i])&&((Point)Global.ratIsAssignedGreedy.get(Global.pipers[i])).equals(rat)){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public static Point getClosestRat(Point[]pipers, Point []rats, int id){
+			Point piper=pipers[id];
+			Point closest=null;
+			double minDist=Double.MAX_VALUE;
+			for(Point r:rats){
+				if(minDist>distance(piper, r)&&distance(piper, r)>10.00){
+					closest=r;
+					minDist=distance(piper,r);
+				}
+			}
+			return closest;
+	}
+	
+	public static Point getClosestRatNotLuredInTheRegion(Point[]pipers, Point []rats, int id){
+		Point piper=pipers[id];
+		
+		Point closest=null;
+		double minDist=Double.MAX_VALUE;
+		for(int i=0;i<rats.length;i++){
+			Point r=rats[i];
+			if(PlayUtilities.getSide(r)!=0&&isRatAndPiperAtSameRegion(id, r)&&minDist>distance(piper, r)&&distance(piper, r)>10.00){
+				closest=r;
+				minDist=distance(piper,r);
+			}
+		}
+		
+		if(closest==null){
+			for(int i=0;i<rats.length;i++){
+				Point r=rats[i];
+				if(PlayUtilities.getSide(r)!=0&&!isRatUnderInfluence(i, pipers, rats)&&minDist>distance(piper, r)&&distance(piper, r)>10.00){
+					closest=r;
+					minDist=distance(piper,r);
+				}
+			}
+			
+			
+		}
+		if(closest==null){
+			closest=new Point(Global.GATE.x,Global.GATE.y);
+		}
+		
+		return closest;
+   }
+	
+	
+	public static boolean isRatAndPiperAtSameRegion(int id, Point rat){
+		double angle=Math.toDegrees(Math.atan((rat.x-Global.GATE.x)/(rat.y-Global.GATE.y)));
+		
+		
+		if(angle<0)
+			angle*=-1;
+		else
+			angle=(180-angle);
+		
+	
+		
+		if(id==0&&angle>=Global.thetas[id]){
+				return true;
+		}else if(id==Global.npipers-1&&angle<Global.thetas[id-1]){
+				return true;
+		}else{
+			if(id!=Global.npipers-1&&angle>=Global.thetas[id]&&angle<Global.thetas[id-1]){
+				return true;
+			}
+			
+		}
+		
+		return false;
+	}
+
+	
+	public static void updateLuredRats(Point []rats, Point [] pipers){
+		
+			for(int i=0;i<rats.length;i++){
+				if(distance(rats[i],getClosestPiper(i, pipers, rats))<=10){
+					Global.isRatLured[i]=true;
+				}
+			}
+		
+	}
+
+	public static void updateOldRatsAndPipers(int idPiper, Point[] rats) {
+		// TODO Auto-generated method stub
+		Global.oldPipers[idPiper]=Global.pipers[idPiper];
+		Global.oldRats=rats;
+	}
+	
+	public static void setIsPlaying(int id, boolean music)
+	{	
+		Global.isPlaying[id]=music;
+		
+	}
 }	
